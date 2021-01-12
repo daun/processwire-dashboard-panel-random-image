@@ -1,0 +1,130 @@
+<?php namespace ProcessWire;
+
+use Daun\Dashboard\DashboardPanel;
+
+// Include abstract panel base class
+require_once dirname(__DIR__).'/Dashboard/DashboardPanel.class.php';
+
+class DashboardPanelRandomImage extends DashboardPanel
+{
+    public static function getModuleInfo()
+    {
+        return array_merge(
+            parent::getModuleInfo(),
+            [
+                'title'    => __('Dashboard Panel: Random Image', __FILE__),
+                'summary'  => __('Display a random image', __FILE__),
+                'author'   => 'Philipp Daun',
+                'version'  => '0.1.0',
+            ]
+        );
+    }
+
+    public function setup()
+    {
+        $this->ratio = $this->data['ratio'] ?? null;
+        $this->fit = $this->data['fit'] ?? null;
+        $this->expires = $this->data['cache'] ?? 0;
+
+        $this->images = $this->data['images'] ?? null;
+        $this->dir = $this->data['dir'] ?? null;
+
+        if (is_array($this->images)) {
+            if ($this->expires) {
+                $this->image = $this->cache()->getFor("$this", 'url-image', $this->expires, function () {
+                    return $this->pickRandom($this->images);
+                });
+            } else {
+                $this->image = $this->pickRandom($this->images);
+            }
+
+        } elseif (is_string($this->dir)) {
+            $dirInTemplates = $this->config()->paths->templates . $this->dir;
+            if (is_dir($dirInTemplates)) {
+                $this->dir = $dirInTemplates;
+            }
+            if ($this->expires) {
+                $this->image = $this->cache()->getFor("$this", 'dir-image', $this->expires, function () {
+                    return $this->pickRandom($this->loadImagesFromFolder($this->dir));
+                });
+            } else {
+                $this->image = $this->pickRandom($this->loadImagesFromFolder($this->dir));
+            }
+        }
+    }
+
+    public function getContent()
+    {
+        if ($this->hasRatio()) {
+            return $this->renderImageWithAspectRatio();
+        } else {
+            return $this->renderImage();
+        }
+    }
+
+    public function getClassNames()
+    {
+        $style = $this->hasRatio() ? 'ratio' : 'static';
+        return [
+            "{$this}--{$style}",
+            "{$this}--{$this->fit}",
+        ];
+    }
+
+    protected function hasRatio()
+    {
+        return $this->ratio !== null;
+    }
+
+    protected function loadImagesFromFolder($dir)
+    {
+        $dir = rtrim($dir, DIRECTORY_SEPARATOR);
+        $files = glob($dir . DIRECTORY_SEPARATOR . '*.{jpg,jpeg,png}', GLOB_BRACE);
+        $urls = array_map([$this, 'convertPathToUrl'], $files);
+        return $urls;
+    }
+
+    protected function convertPathToUrl($path)
+    {
+        $rootPath = $this->config()->paths->root;
+        $rootUrl = $this->config()->urls->root;
+        $relativePath = substr($path, strlen($rootPath));
+        $fullUrl = $rootUrl . $relativePath;
+        return $fullUrl;
+    }
+
+    protected function pickRandom($array)
+    {
+        $rand_key = array_rand($array);
+        return $array[$rand_key] ?? null;
+    }
+
+    protected function renderImage()
+    {
+        return "<img src='{$this->image}' loading='lazy'>";
+    }
+
+    protected function renderImageWithAspectRatio()
+    {
+        $padding = $this->aspectRatioPadding($this->ratio);
+        $image = $this->renderImage();
+        return "
+            <div class='ratio-wrapper'>
+                <div class='ratio-container' style='{$padding}'>
+                    {$image}
+                </div>
+            </div>
+        ";
+    }
+
+    protected function aspectRatioPadding($ratio)
+    {
+        if (is_numeric($ratio) && $ratio > 0) {
+            $fraction = 1 / $ratio;
+            $padding = number_format($fraction * 100, 2, '.', '') . '%';
+            return "padding-bottom: {$padding};";
+        } else {
+            return "";
+        }
+    }
+}
