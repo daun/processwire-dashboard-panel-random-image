@@ -74,4 +74,4 @@ Pull requests are welcome.
 
 ## License
 
-[GPL-3.0](https://github.com/daun/processwire-dashboard/blob/master/LICENSE)
+[GPL-3.0](./LICENSE)
