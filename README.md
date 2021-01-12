@@ -63,9 +63,9 @@ How to fit images into the ratio container: `cover` or `contain`
 
 ### cache
 
-Optionally cache the result of the random pick. À la Photo of the Day.
+Optionally cache the result of the random pick, à la Photo of the Day.
 
-Takes any [value accepted by WireCache](https://processwire.com/api/ref/wire-cache/get/):
+Takes any value accepted by [WireCache](https://processwire.com/api/ref/wire-cache/get/):
 `3600`, `hourly`, `daily`, `tomorrow midnight`, etc.
 
 ## Contributing
